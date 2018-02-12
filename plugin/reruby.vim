@@ -11,12 +11,12 @@ function! s:RunRefactor(subcmd, ...)
   let l:command = 'reruby '.a:subcmd.' --report json -l '.l:file_name.':'.l:current_line.' '.l:rest_args.' 2> /dev/null'
 
 
-  let l:execution_result = system(l:command)
+  let l:executionResult = system(l:command)
 
   if v:shell_error
-    echo('Something went wrong: '. l:execution_result)
+    echo('Something went wrong: '. l:executionResult)
   else
-    call s:RefreshBuffers(l:execution_result)
+    call s:RefreshBuffers(l:executionResult)
   endif
 endfunction
 
@@ -25,29 +25,33 @@ function! s:RefreshBuffers(output)
   let l:current_bufnum = bufnr('%')
 
   for l:file in l:parsed_response.changed
-    let l:bufnum = bufnr(l:file)
+    let l:bufnum = s:FindBufNum(l:file)
     if l:bufnum != -1
       execute 'checktime '.l:bufnum
     endif
   endfor
 
   for l:file in l:parsed_response.removed
-    let l:bufnum = bufnr(l:file)
+    let l:bufnum = s:FindBufNum(l:file)
     if l:bufnum != -1
       execute 'bdelete '.l:bufnum
     endif
   endfor
 
   for l:file_pair in l:parsed_response.renamed
-    let l:bufnum = bufnr(l:file_pair[0])
+    let l:bufnum = s:FindBufNum(l:file_pair[0])
     if l:bufnum != -1
       if l:bufnum == l:current_bufnum
         execute 'e '.l:file_pair[1]
       endif
       execute 'bdelete '.l:bufnum
-      execute ''
     endif
   endfor
+endfunction
+
+function! s:FindBufNum(file)
+  let l:fileRegex = a:file.'$'
+  return bufnr(l:fileRegex)
 endfunction
 
 
