@@ -7,17 +7,19 @@ function! s:RunRefactor(subcmd, ...)
   let l:current_line = getpos(".")[1]
   let l:file_name = @%
   let l:rest_args = join(a:000)
+  let l:stderr_file = tempname()
 
-  let l:command = 'reruby '.a:subcmd.' --report json -l '.l:file_name.':'.l:current_line.' '.l:rest_args.' 2> /dev/null'
+  let l:command = 'reruby '.a:subcmd.' --report json -l '.l:file_name.':'.l:current_line.' '.l:rest_args.' 2> '.l:stderr_file
+  let l:execution_result = system(l:command)
 
-
-  let l:executionResult = system(l:command)
 
   if v:shell_error
-    echo('Something went wrong: '. l:executionResult)
+    call s:PrintError(l:stderr_file)
   else
-    call s:RefreshBuffers(l:executionResult)
+    call s:RefreshBuffers(l:execution_result)
   endif
+
+  call delete(l:stderr_file)
 endfunction
 
 function! s:RefreshBuffers(output)
@@ -50,8 +52,15 @@ function! s:RefreshBuffers(output)
 endfunction
 
 function! s:FindBufNum(file)
-  let l:fileRegex = a:file.'$'
-  return bufnr(l:fileRegex)
+  let l:file_regex = a:file.'$'
+  return bufnr(l:file_regex)
+endfunction
+
+function! s:PrintError(stderr_file)
+  let l:error = join(readfile(a:stderr_file), "\n   ")
+  echohl ErrorMsg
+  echo("Something went wrong, output of reruby: \n\n   ".l:error)
+  echohl None
 endfunction
 
 
