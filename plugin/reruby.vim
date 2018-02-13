@@ -3,23 +3,37 @@ if exists('g:loaded_reruby')
 endif
 let g:loaded_reruby = 1
 
-function! s:RunRefactor(subcmd, ...)
-  let l:current_line = getpos(".")[1]
-  let l:file_name = @%
+function! s:RunRefactor(start_line, end_line, subcmd, ...)
   let l:rest_args = join(a:000)
   let l:stderr_file = tempname()
 
-  let l:command = 'reruby '.a:subcmd.' --report json -l '.l:file_name.':'.l:current_line.' '.l:rest_args.' 2> '.l:stderr_file
+  let l:location = s:FileWithPosition(a:start_line, a:end_line)
+
+  let l:command = 'reruby '.a:subcmd.' --report json -l '.l:location.' '.l:rest_args.' 2> '.l:stderr_file
   let l:execution_result = system(l:command)
 
 
   if v:shell_error
-    call s:PrintError(l:stderr_file)
+  call s:PrintError(l:stderr_file)
   else
-    call s:RefreshBuffers(l:execution_result)
+  call s:RefreshBuffers(l:execution_result)
   endif
 
   call delete(l:stderr_file)
+endfunction
+
+function! s:FileWithPosition(start_line, end_line)
+  let l:file_name = @%
+  if a:start_line > a:end_line
+    let l:position_in_file = getpos(".")[1]
+  else
+    let [l:line_start, l:column_start] = getpos("'<")[1:2]
+    let [l:line_end, l:column_end] = getpos("'>")[1:2]
+
+    let l:position_in_file = l:line_start.':'.l:column_start.':'.l:line_end.':'.l:column_end
+  endif
+
+  return l:file_name.':'.l:position_in_file
 endfunction
 
 function! s:RefreshBuffers(output)
@@ -64,5 +78,5 @@ function! s:PrintError(stderr_file)
 endfunction
 
 
-command! -nargs=* Reruby :call <SID>RunRefactor(<f-args>)
+command! -nargs=* -range=0 Reruby :call <SID>RunRefactor(<line1>, <line2>, <f-args>)
 
