@@ -30,6 +30,9 @@ function! s:FileWithPosition(start_line, end_line)
     let [l:line_start, l:column_start] = getpos("'<")[1:2]
     let [l:line_end, l:column_end] = getpos("'>")[1:2]
 
+    let l:column_start = l:column_start - 1
+    let l:column_end = l:column_end - 1
+
     let l:position_in_file = l:line_start.':'.l:column_start.':'.l:line_end.':'.l:column_end
   endif
 
